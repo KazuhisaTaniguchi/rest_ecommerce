@@ -8,14 +8,23 @@ from django.views.generic.list import ListView
 from django.shortcuts import redirect, get_object_or_404, render
 # from django.utils import timezone
 
+from rest_framework import filters
 from rest_framework import generics
+from rest_framework.authentication import (
+    SessionAuthentication,
+)
+from rest_framework.permissions import (
+    IsAuthenticated,
+    # IsAuthenticatedOrReadOnly,
+)
 
-from django_filters import FilterSet, CharFilter, NumberFilter
+from .filters import ProductFilter
 
 from .forms import VariationInventoryFormSet, ProductFilterForm
 from .mixins import StaffRequireMixin
 from .models import Product, Variation, Category
 
+from .pagination import CategoryPagination
 from .serializers import (
     CategorySerializer,
     ProductSerializer,
@@ -29,21 +38,38 @@ import random
 class CategoryListAPIView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    pagination_class = CategoryPagination
 
 
 class CategoryRetrieveAPIView(generics.RetrieveAPIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
 class ProductListAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    filter_backends = [
+        filters.SearchFilter,
+        filters.OrderingFilter,
+        filters.DjangoFilterBackend,
+    ]
+    search_fields = ['title', 'description']
+    ordering_fields = ['title', 'id']
+    filter_class = ProductFilter
 
 
 class ProductRetrieveAPIView(generics.RetrieveAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductDetailSerializer
+
+
+# class ProductCreateAPIView(generics.CreateAPIView):
+#     queryset = Product.objects.all()
+#     serializer_class = ProductDetailUpdateSerializer
 
 
 # CBVs
@@ -102,31 +128,6 @@ class VariationListView(StaffRequireMixin, ListView):
                 request, 'Your inventory and pricing has been updated.')
             return redirect('products:products')
         raise Http404
-
-
-# Seart機能の便利Plugin活用
-class ProductFilter(FilterSet):
-    title = CharFilter(
-        name='title', lookup_type='icontains')
-    category = CharFilter(
-        name='categories__title', lookup_type='icontains', distinct=True)
-    category_id = CharFilter(
-        name='categories__id', lookup_type='icontains', distinct=True)
-
-    min_price = NumberFilter(
-        name='variation__price', lookup_type='gte', distinct=True)
-    max_price = NumberFilter(
-        name='variation__price', lookup_type='lte', distinct=True)
-
-    class Meata:
-        model = Product
-        fileds = [
-            'min_price',
-            'max_price',
-            'category',
-            'title',
-            'description',
-        ]
 
 
 def product_list(request):
