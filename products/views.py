@@ -8,14 +8,45 @@ from django.views.generic.list import ListView
 from django.shortcuts import redirect, get_object_or_404, render
 # from django.utils import timezone
 
+from rest_framework import generics
+
 from django_filters import FilterSet, CharFilter, NumberFilter
 
 from .forms import VariationInventoryFormSet, ProductFilterForm
 from .mixins import StaffRequireMixin
 from .models import Product, Variation, Category
 
+from .serializers import (
+    CategorySerializer,
+    ProductSerializer,
+    ProductDetailSerializer,
+)
+
 import random
 
+
+# API CBVs
+class CategoryListAPIView(generics.ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
+class CategoryRetrieveAPIView(generics.RetrieveAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
+class ProductListAPIView(generics.ListAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+
+
+class ProductRetrieveAPIView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductDetailSerializer
+
+
+# CBVs
 
 class CategoryListView(ListView):
     model = Category

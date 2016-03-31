@@ -3,7 +3,7 @@ from .views import (
     ProductDetailView,
     ProductListView,
     VariationListView,
-    product_list,
+    # product_list,
 )
 
 urlpatterns = [

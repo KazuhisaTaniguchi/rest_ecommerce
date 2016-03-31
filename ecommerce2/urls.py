@@ -30,6 +30,12 @@ from orders.views import (
     OrderList,
     OrderDetail,
 )
+from products.views import(
+    CategoryListAPIView,
+    CategoryRetrieveAPIView,
+    ProductListAPIView,
+    ProductRetrieveAPIView,
+)
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -51,7 +57,25 @@ urlpatterns = [
     url(r'^checkout/final/$',
         CheckoutFinalView.as_view(), name='checkout_final'),
 
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+
+# API Patterns
+urlpatterns += [
+    url(r'^api/categories/$',
+        CategoryListAPIView.as_view(), name='category_api'),
+    url(r'^api/category/(?P<pk>[0-9]+)/$',
+        CategoryRetrieveAPIView.as_view(), name='category_detail_api'),
+
+    url(r'^api/products/$',
+        ProductListAPIView.as_view(), name='product_api'),
+    url(r'^api/product/(?P<pk>[0-9]+)/$',
+        ProductRetrieveAPIView.as_view(), name='product_detail_api'),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 # if settings.DEBUG:
 #     urlpatterns += static(
 #         settings.STATIC_URL,
