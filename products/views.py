@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse as api_reverse
 from rest_framework.views import APIView
 
-from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+# from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from .filters import ProductFilter
 

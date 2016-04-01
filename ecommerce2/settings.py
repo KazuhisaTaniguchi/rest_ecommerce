@@ -182,4 +182,6 @@ JWT_AUTH = {
         'ecommerce2.utils.jwt_response_payload_handler',
     # for login time
     'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=30000),
+    # Default is False
+    'JWT_ALLOW_REFRESH': True,
 }

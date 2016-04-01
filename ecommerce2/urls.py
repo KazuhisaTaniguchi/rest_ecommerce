@@ -23,6 +23,7 @@ from carts.views import (
     ItemCountView,
     CheckoutView,
     CheckoutFinalView,
+    CartAPIView,
 )
 from orders.views import (
     AddressSelectFormView,
@@ -39,7 +40,7 @@ from products.views import(
     ProductRetrieveAPIView,
 )
 
-from rest_framework_jwt.views import obtain_jwt_token
+from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 
 
 urlpatterns = [
@@ -68,7 +69,9 @@ urlpatterns = [
 # API Patterns
 urlpatterns += [
     url(r'^api/$', APIHomeView.as_view(), name='home_api'),
+    url(r'^api/cart/$', CartAPIView.as_view(), name='cart_api'),
     url(r'^api/auth/token/$', obtain_jwt_token),
+    url(r'^api/auth/token/refresh/$', refresh_jwt_token),
     url(r'^api/user/checkout/$',
         UserCheckoutAPI.as_view(), name='user_checkout_api'),
     url(r'^api/categories/$',

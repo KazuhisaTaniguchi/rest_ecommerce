@@ -16,6 +16,64 @@ from products.models import Variation
 from .models import Cart, CartItem
 from orders.models import UserCheckout, Order, UserAddress
 
+from rest_framework.response import Response
+from rest_framework.reverse import reverse as api_reverse
+from rest_framework.views import APIView
+# 暗号化
+import base64
+# 元は配列の文字列を配列にする (ast.literal_eval(token_decoded))
+import ast
+
+
+# API CBVs
+class CartAPIView(APIView):
+    token = None
+    cart = None
+
+    def create_token(self, cart_id):
+        data = {
+            'cart_id': cart_id,
+        }
+        token = base64.b64encode(str(data))
+        self.token = token
+        return token
+
+    def get_cart(self):
+        token_data = self.request.GET.get('token')
+        cart_obj = None
+        if token_data:
+            token_decoded = base64.b64decode(token_data)
+            # astを使って文字列を配列に戻す
+            token_dict = (ast.literal_eval(token_decoded))
+            cart_id = token_dict.get('cart_id')
+            try:
+                cart_obj = Cart.objects.get(id=cart_id)
+            except:
+                pass
+            self.token = token_data
+
+        if cart_obj is None:
+            cart = Cart()
+            if self.request.user.is_authenticated():
+                cart.user = self.request.user
+            cart.save()
+            self.create_token(cart.id)
+            cart_obj = cart
+        return cart_obj
+
+    def get(self, request, format=None):
+        cart = self.get_cart()
+        self.cart = cart
+        data = {
+            'token': self.token,
+            'cart': cart.id,
+            'total': cart.total,
+            'subtotal': cart.sub_total,
+            'tax_total': cart.tax_total,
+            'items': cart.items.count(),
+        }
+        return Response(data)
+
 
 class ItemCountView(View):
 
