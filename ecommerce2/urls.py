@@ -29,13 +29,18 @@ from orders.views import (
     UserAddressCreateView,
     OrderList,
     OrderDetail,
+    UserCheckoutAPI,
 )
 from products.views import(
+    APIHomeView,
     CategoryListAPIView,
     CategoryRetrieveAPIView,
     ProductListAPIView,
     ProductRetrieveAPIView,
 )
+
+from rest_framework_jwt.views import obtain_jwt_token
+
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -62,13 +67,17 @@ urlpatterns = [
 
 # API Patterns
 urlpatterns += [
+    url(r'^api/$', APIHomeView.as_view(), name='home_api'),
+    url(r'^api/auth/token/$', obtain_jwt_token),
+    url(r'^api/user/checkout/$',
+        UserCheckoutAPI.as_view(), name='user_checkout_api'),
     url(r'^api/categories/$',
-        CategoryListAPIView.as_view(), name='category_api'),
+        CategoryListAPIView.as_view(), name='categories_api'),
     url(r'^api/category/(?P<pk>[0-9]+)/$',
         CategoryRetrieveAPIView.as_view(), name='category_detail_api'),
 
     url(r'^api/products/$',
-        ProductListAPIView.as_view(), name='product_api'),
+        ProductListAPIView.as_view(), name='products_api'),
     url(r'^api/product/(?P<pk>[0-9]+)/$',
         ProductRetrieveAPIView.as_view(), name='product_detail_api'),
 ]

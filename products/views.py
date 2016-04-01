@@ -17,12 +17,13 @@ from rest_framework.permissions import (
     IsAuthenticated,
     # IsAuthenticatedOrReadOnly,
 )
+from rest_framework.response import Response
+from rest_framework.reverse import reverse as api_reverse
+from rest_framework.views import APIView
+
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from .filters import ProductFilter
-
-from .forms import VariationInventoryFormSet, ProductFilterForm
-from .mixins import StaffRequireMixin
-from .models import Product, Variation, Category
 
 from .pagination import CategoryPagination
 from .serializers import (
@@ -31,10 +32,30 @@ from .serializers import (
     ProductDetailSerializer,
 )
 
+from .forms import VariationInventoryFormSet, ProductFilterForm
+from .mixins import StaffRequireMixin
+from .models import Product, Variation, Category
+
+
 import random
 
 
 # API CBVs
+class APIHomeView(APIView):
+    def get(self, request, format=None):
+        data = {
+            'products': {
+                'count': Product.objects.all().count(),
+                'url': api_reverse('products_api', request=request),
+            },
+            'categories': {
+                'count': Category.objects.all().count(),
+                'url': api_reverse('categories_api', request=request),
+            },
+        }
+        return Response(data)
+
+
 class CategoryListAPIView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
