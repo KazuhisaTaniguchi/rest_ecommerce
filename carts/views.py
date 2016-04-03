@@ -17,8 +17,15 @@ from .models import Cart, CartItem
 from orders.models import UserCheckout, Order, UserAddress
 
 from rest_framework.response import Response
-from rest_framework.reverse import reverse as api_reverse
+# from rest_framework.reverse import reverse as api_reverse
 from rest_framework.views import APIView
+
+from .serializers import (
+    CartItemSerializer,
+    CartVariationSerializer,
+
+)
+
 # 暗号化
 import base64
 # 元は配列の文字列を配列にする (ast.literal_eval(token_decoded))
@@ -26,7 +33,44 @@ import ast
 
 
 # API CBVs
-class CartAPIView(APIView):
+
+class CartUpdateAPIMixin(object):
+    def update_cart(self, *args, **kwargs):
+        request = self.request
+        cart = self.cart
+
+        if cart:
+            item_id = request.GET.get('item')
+            delete_item = request.GET.get('delete', False)
+            flash_message = ''
+            item_added = False
+            if item_id:
+                item_instance = get_object_or_404(Variation, id=item_id)
+                qty = request.GET.get('qty', 1)
+                try:
+                    if int(qty) < 1:
+                        delete_item = True
+                except:
+                    raise Http404
+                cart_item, created = CartItem.objects.get_or_create(
+                    cart=cart, item=item_instance)
+
+                if created:
+                    flash_message = 'カートに追加されました｡'
+                    item_added = True
+
+                if delete_item:
+                    flash_message = 'カートから移動しました｡'
+                    cart_item.delete()
+                else:
+                    if not created:
+                        flash_message = '商品数を変更しました｡'
+
+                    cart_item.quantity = qty
+                    cart_item.save()
+
+
+class CartAPIView(CartUpdateAPIMixin, APIView):
     token = None
     cart = None
 
@@ -64,13 +108,16 @@ class CartAPIView(APIView):
     def get(self, request, format=None):
         cart = self.get_cart()
         self.cart = cart
+        self.update_cart()
+        items = CartItemSerializer(cart.cartitem_set.all(), many=True)
         data = {
             'token': self.token,
             'cart': cart.id,
             'total': cart.total,
             'subtotal': cart.sub_total,
             'tax_total': cart.tax_total,
-            'items': cart.items.count(),
+            'count': cart.items.count(),
+            'items': items.data,
         }
         return Response(data)
 
