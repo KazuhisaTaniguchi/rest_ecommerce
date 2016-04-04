@@ -16,79 +16,38 @@ from products.models import Variation
 from .models import Cart, CartItem
 from orders.models import UserCheckout, Order, UserAddress
 
+from rest_framework import status
 from rest_framework.response import Response
 # from rest_framework.reverse import reverse as api_reverse
 from rest_framework.views import APIView
 
 from .serializers import (
     CartItemSerializer,
-    CartVariationSerializer,
-
 )
-
-# 暗号化
-import base64
-# 元は配列の文字列を配列にする (ast.literal_eval(token_decoded))
-import ast
-
+from .mixins import (
+    TokenMixin,
+    CartUpdateAPIMixin,
+    CartTokenMixin,
+)
 
 # API CBVs
 
-class CartUpdateAPIMixin(object):
-    def update_cart(self, *args, **kwargs):
-        request = self.request
-        cart = self.cart
 
-        if cart:
-            item_id = request.GET.get('item')
-            delete_item = request.GET.get('delete', False)
-            flash_message = ''
-            item_added = False
-            if item_id:
-                item_instance = get_object_or_404(Variation, id=item_id)
-                qty = request.GET.get('qty', 1)
-                try:
-                    if int(qty) < 1:
-                        delete_item = True
-                except:
-                    raise Http404
-                cart_item, created = CartItem.objects.get_or_create(
-                    cart=cart, item=item_instance)
-
-                if created:
-                    flash_message = 'カートに追加されました｡'
-                    item_added = True
-
-                if delete_item:
-                    flash_message = 'カートから移動しました｡'
-                    cart_item.delete()
-                else:
-                    if not created:
-                        flash_message = '商品数を変更しました｡'
-
-                    cart_item.quantity = qty
-                    cart_item.save()
+class CheckoutAPIView(TokenMixin, CartTokenMixin, APIView):
+    def get(self, request, format=None):
+        data, cart_obj, response_status = self.get_cart_from_token()
+        return Response(data, status=response_status)
 
 
-class CartAPIView(CartUpdateAPIMixin, APIView):
-    token = None
+class CartAPIView(TokenMixin, CartUpdateAPIMixin, APIView):
     cart = None
-
-    def create_token(self, cart_id):
-        data = {
-            'cart_id': cart_id,
-        }
-        token = base64.b64encode(str(data))
-        self.token = token
-        return token
 
     def get_cart(self):
         token_data = self.request.GET.get('token')
         cart_obj = None
         if token_data:
-            token_decoded = base64.b64decode(token_data)
-            # astを使って文字列を配列に戻す
-            token_dict = (ast.literal_eval(token_decoded))
+
+            token_dict = self.parse_token(token=token_data)
             cart_id = token_dict.get('cart_id')
             try:
                 cart_obj = Cart.objects.get(id=cart_id)
@@ -101,7 +60,10 @@ class CartAPIView(CartUpdateAPIMixin, APIView):
             if self.request.user.is_authenticated():
                 cart.user = self.request.user
             cart.save()
-            self.create_token(cart.id)
+            data = {
+                'cart_id': str(cart.id),
+            }
+            self.create_token(data)
             cart_obj = cart
         return cart_obj
 
