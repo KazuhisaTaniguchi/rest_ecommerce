@@ -57,6 +57,8 @@ class Cart(models.Model):
     total = models.DecimalField(
         max_digits=20, decimal_places=0, default=10)
 
+    active = models.BooleanField(default=True)
+
     # discount
     # shipping
 
@@ -70,6 +72,10 @@ class Cart(models.Model):
             sub_total += item.line_item_total
 
         self.sub_total = sub_total
+        self.save()
+
+    def is_complete(self):
+        self.active = False
         self.save()
 
 

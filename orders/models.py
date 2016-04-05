@@ -74,6 +74,11 @@ class Order(models.Model):
         self.status = 'completed'
         self.save()
 
+    def is_complete(self):
+        if self.status == 'paid':
+            return True
+        return False
+
 
 def order_pre_save(sender, instance, *args, **kwargs):
     shipping_total_price = instance.shipping_total_price

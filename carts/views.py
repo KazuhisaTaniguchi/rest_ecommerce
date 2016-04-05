@@ -33,29 +33,46 @@ from .mixins import (
 # API CBVs
 
 
-class CheckoutAPIView(TokenMixin, CartTokenMixin, APIView):
+class CheckoutAPIView(CartTokenMixin, APIView):
     def get(self, request, format=None):
         data, cart_obj, response_status = self.get_cart_from_token()
+
+        if cart_obj:
+            if cart_obj.items.count() == 0:
+                data = {
+                    'message': 'Your cart is Empty'
+                }
+                response_status = status.HTTP_400_BAD_REQUEST
+            else:
+                order, created = Order.objects.get_or_create(cart=cart_obj)
+                if order.is_complete():
+                    order.cart.is_complete()
+
+                    data = {
+                        'message': 'This order has been completed.',
+                    }
+
+                    return Response(data)
+                order.save()
+                data['order'] = order.id
+                # data['user'] = order.user
+                # data['shipping_address'] = order.shipping_address
+                # data['billing_address'] = order.billing_address
+                data['shipping_total_price'] = order.shipping_total_price
+                data['subtotal'] = cart_obj.total
+                data['total'] = order.order_total
+
         return Response(data, status=response_status)
 
 
-class CartAPIView(TokenMixin, CartUpdateAPIMixin, APIView):
+class CartAPIView(CartTokenMixin, CartUpdateAPIMixin, APIView):
     cart = None
+    token_param = 'token'
 
     def get_cart(self):
-        token_data = self.request.GET.get('token')
-        cart_obj = None
-        if token_data:
+        data, cart_obj, response_status = self.get_cart_from_token()
 
-            token_dict = self.parse_token(token=token_data)
-            cart_id = token_dict.get('cart_id')
-            try:
-                cart_obj = Cart.objects.get(id=cart_id)
-            except:
-                pass
-            self.token = token_data
-
-        if cart_obj is None:
+        if cart_obj is None or not cart_obj.active:
             cart = Cart()
             if self.request.user.is_authenticated():
                 cart.user = self.request.user

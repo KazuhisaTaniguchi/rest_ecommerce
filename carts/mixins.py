@@ -69,11 +69,14 @@ class TokenMixin(object):
             return {}
 
 
-class CartTokenMixin(object):
+class CartTokenMixin(TokenMixin, object):
+    token_param = 'cart_token'
+    token = None
+
     def get_cart_from_token(self):
         request = self.request
         response_status = status.HTTP_200_OK
-        cart_token = request.GET.get('cart_token')
+        cart_token = request.GET.get(self.token_param)
         message = 'This requires a vaild cart token.'
 
         cart_token_data = self.parse_token(cart_token)
@@ -90,6 +93,7 @@ class CartTokenMixin(object):
             }
             response_status = status.HTTP_400_BAD_REQUEST
         else:
+            self.token = cart_token
             data = {
                 'success': True,
                 'cart': cart.id,
