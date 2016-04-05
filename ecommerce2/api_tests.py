@@ -11,7 +11,7 @@ cart_url = base_url + 'cart/'
 
 data = {
     'username': 'taniguchi',
-    'password': 'password',
+    'password': 'taniguchi96',
 }
 login_request = requests.post(login_url, data=data)
 
