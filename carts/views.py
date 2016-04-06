@@ -11,6 +11,7 @@ from django.views.generic.edit import FormMixin
 
 from orders.mixins import CartOrderMixin
 from orders.forms import GuestCheckoutForm
+from orders.serializers import OrderSerializer
 
 from products.models import Variation
 from .models import Cart, CartItem
@@ -23,9 +24,9 @@ from rest_framework.views import APIView
 
 from .serializers import (
     CartItemSerializer,
+    CheckoutSerializer,
 )
 from .mixins import (
-    TokenMixin,
     CartUpdateAPIMixin,
     CartTokenMixin,
 )
@@ -34,8 +35,58 @@ from .mixins import (
 
 
 class CheckoutAPIView(CartTokenMixin, APIView):
+    def post(self, request, format=None):
+        data = request.data
+        serializer = CheckoutSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            print 'valid data!!@!@'
+            print serializer.data
+        response = {
+            'data': 'none',
+        }
+        return Response(response)
+
     def get(self, request, format=None):
         data, cart_obj, response_status = self.get_cart_from_token()
+        user_checkout_token = self.request.GET.get("checkout_token")
+        user_checkout_data = self.parse_token(user_checkout_token)
+        user_checkout_id = user_checkout_data.get('user_checkout_id')
+
+        billing_address = self.request.GET.get('billing')
+        shipping_address = self.request.GET.get('shipping')
+        billing_obj, shipping_obj = None, None
+
+        try:
+            user_checkout = UserCheckout.objects.get(id=int(user_checkout_id))
+        except:
+            user_checkout = None
+
+        if user_checkout is None:
+            data = {
+                'message': 'A user or guest user is required to continue.'
+            }
+            response_status = status.HTTP_400_BAD_REQUEST
+            return Response(data, status=response_status)
+
+        if billing_address:
+            try:
+                billing_obj = UserAddress.objects.get(
+                    user=user_checkout, id=int(billing_address))
+            except:
+                pass
+        if shipping_address:
+            try:
+                shipping_obj = UserAddress.objects.get(
+                    user=user_checkout, id=int(shipping_address))
+            except:
+                pass
+
+        if not billing_obj or not shipping_obj:
+            data = {
+                'message': 'A vailid billing or shipping is needed.'
+            }
+            response_status = status.HTTP_400_BAD_REQUEST
+            return Response(data, status=response_status)
 
         if cart_obj:
             if cart_obj.items.count() == 0:
@@ -45,6 +96,8 @@ class CheckoutAPIView(CartTokenMixin, APIView):
                 response_status = status.HTTP_400_BAD_REQUEST
             else:
                 order, created = Order.objects.get_or_create(cart=cart_obj)
+                if not order.user:
+                    order.user = user_checkout
                 if order.is_complete():
                     order.cart.is_complete()
 
@@ -53,14 +106,11 @@ class CheckoutAPIView(CartTokenMixin, APIView):
                     }
 
                     return Response(data)
+
+                order.billing_address = billing_obj
+                order.shipping_address = shipping_obj
                 order.save()
-                data['order'] = order.id
-                # data['user'] = order.user
-                # data['shipping_address'] = order.shipping_address
-                # data['billing_address'] = order.billing_address
-                data['shipping_total_price'] = order.shipping_total_price
-                data['subtotal'] = cart_obj.total
-                data['total'] = order.order_total
+                data = OrderSerializer(order).data
 
         return Response(data, status=response_status)
 

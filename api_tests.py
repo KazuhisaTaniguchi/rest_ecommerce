@@ -18,7 +18,7 @@ def do_api_test(email=None, user_auth=None):
     # add items to cart
     new_cart_url = cart_url + '?token=' + cart_token + '&item=1&qty=3&'
     new_cart_r = requests.get(new_cart_url)
-    # print new_cart_r.text
+    print new_cart_r.text
     # get user_checkout token
     user_checkout_url = 'http://127.0.0.1:8000/api/user/checkout/'
     if email:
@@ -66,8 +66,8 @@ def do_api_test(email=None, user_auth=None):
             'cart_token': cart_token,
             'checkout_token': user_checkout_token
         }
-        # print data
+        print data
         order = requests.post(checkout_url, data=data)
-        # print order.text
+        print order.text
 
 do_api_test(email='jjw96@gmail.com')

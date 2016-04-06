@@ -32,6 +32,8 @@ from orders.views import (
     OrderList,
     OrderDetail,
     UserCheckoutAPI,
+    UserAddressCreateAPIView,
+    UserAddressListAPIView,
 )
 from products.views import(
     APIHomeView,
@@ -74,6 +76,11 @@ urlpatterns += [
     url(r'^api/checkout/$', CheckoutAPIView.as_view(), name='checkout_api'),
     url(r'^api/auth/token/$', obtain_jwt_token),
     url(r'^api/auth/token/refresh/$', refresh_jwt_token),
+
+    url(r'^api/user/address/$',
+        UserAddressListAPIView.as_view(), name='user_address_list_api'),
+    url(r'^api/user/address/create/$',
+        UserAddressCreateAPIView.as_view(), name='user_address_create_api'),
     url(r'^api/user/checkout/$',
         UserCheckoutAPI.as_view(), name='user_checkout_api'),
     url(r'^api/categories/$',
